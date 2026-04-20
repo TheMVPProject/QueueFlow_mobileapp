@@ -7,42 +7,32 @@ import 'package:queueflow_mobileapp/widgets/app_text_field.dart';
 import 'package:queueflow_mobileapp/widgets/app_password_field.dart';
 import 'package:queueflow_mobileapp/widgets/primary_button.dart';
 import 'package:queueflow_mobileapp/utils/app_snackbar.dart';
-import 'package:queueflow_mobileapp/utils/error_handler.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends ConsumerStatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String? _userRole;
-  String? _displayError; // Local error display
+  String? _displayError;
 
   @override
   void dispose() {
     _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Get role from route extras if available
-    final extra = ModalRoute.of(context)?.settings.arguments;
-    if (extra is String && _userRole == null) {
-      setState(() {
-        _userRole = extra;
-      });
-    }
-  }
-
-  Future<void> _login() async {
+  Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Clear any previous errors
@@ -52,22 +42,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     FocusScope.of(context).unfocus();
 
-    await ref.read(authProvider.notifier).login(
+    await ref.read(authProvider.notifier).register(
           _usernameController.text.trim(),
+          _emailController.text.trim(),
           _passwordController.text,
         );
   }
 
-  Color get _roleColor {
-    if (_userRole == 'admin') return AppTheme.adminColor;
-    if (_userRole == 'user') return AppTheme.userColor;
-    return AppTheme.primaryColor;
-  }
+  String _getErrorMessage(String error) {
+    final errorLower = error.toLowerCase();
 
-  IconData get _roleIcon {
-    if (_userRole == 'admin') return Icons.shield_rounded;
-    if (_userRole == 'user') return Icons.person_rounded;
-    return Icons.people_alt_rounded;
+    if (errorLower.contains('username') &&
+        (errorLower.contains('taken') ||
+            errorLower.contains('exists') ||
+            errorLower.contains('already'))) {
+      return 'This username is already taken';
+    }
+
+    if (errorLower.contains('email') &&
+        (errorLower.contains('taken') ||
+            errorLower.contains('exists') ||
+            errorLower.contains('already'))) {
+      return 'This email is already registered';
+    }
+
+    if (errorLower.contains('network') ||
+        errorLower.contains('connection') ||
+        errorLower.contains('timeout') ||
+        errorLower.contains('socketexception') ||
+        errorLower.contains('failed host lookup')) {
+      return 'Unable to connect to server. Please check your internet connection.';
+    }
+
+    if (errorLower.contains('server') || errorLower.contains('500')) {
+      return 'Server error. Please try again later.';
+    }
+
+    return 'Registration failed. Please try again.';
   }
 
   @override
@@ -77,7 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Listen for errors and show snackbar + update local error state
     ref.listen(authProvider, (previous, next) {
       if (next.error != null && previous?.error != next.error) {
-        final errorMessage = getErrorMessage(next.error!, context: 'login');
+        final errorMessage = _getErrorMessage(next.error!);
 
         // Show snackbar
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -92,7 +103,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         });
       }
 
-      // Clear error on successful login
+      // Clear error on successful registration
       if (next.isAuthenticated && previous?.isAuthenticated != true) {
         setState(() {
           _displayError = null;
@@ -110,6 +121,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           onPressed: authState.isLoading ? null : () => context.pop(),
           tooltip: 'Back',
         ),
+        title: Text(
+          'Create Account',
+          style: AppTheme.headlineMedium,
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -121,28 +136,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const SizedBox(height: AppTheme.spacingXL),
 
-                // Role Icon
+                // Icon
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(AppTheme.spacingXL),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         colors: [
-                          _roleColor,
-                          _roleColor.withValues(alpha: 0.8),
+                          AppTheme.secondaryColor,
+                          AppTheme.secondaryDark,
                         ],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: _roleColor.withValues(alpha: 0.3),
+                          color: AppTheme.secondaryColor.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
-                    child: Icon(
-                      _roleIcon,
+                    child: const Icon(
+                      Icons.person_add_alt_1_rounded,
                       size: 50,
                       color: Colors.white,
                     ),
@@ -153,41 +168,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // Title
                 Text(
-                  'Welcome Back',
+                  'Join QueueFlow',
                   textAlign: TextAlign.center,
                   style: AppTheme.displayLarge,
                 ),
 
                 const SizedBox(height: AppTheme.spacingSM),
 
-                // Subtitle with role badge
-                if (_userRole != null)
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppTheme.spacingLG,
-                        vertical: AppTheme.spacingSM,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _roleColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                      ),
-                      child: Text(
-                        _userRole == 'admin' ? 'Admin Portal' : 'User Portal',
-                        style: AppTheme.labelLarge.copyWith(
-                          color: _roleColor,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  Text(
-                    'Sign in to continue',
-                    textAlign: TextAlign.center,
-                    style: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
+                // Subtitle
+                Text(
+                  'Create your account to get started',
+                  textAlign: TextAlign.center,
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondary,
                   ),
+                ),
 
                 const SizedBox(height: AppTheme.spacing3XL),
 
@@ -241,12 +236,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 AppTextField(
                   controller: _usernameController,
                   label: 'Username',
-                  hint: 'Enter your username',
-                  prefixIcon: Icons.person_outline_rounded,
+                  hint: 'Choose a username',
+                  prefixIcon: Icons.account_circle_outlined,
                   enabled: !authState.isLoading,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your username';
+                      return 'Username is required';
+                    }
+                    if (value.trim().length < 3) {
+                      return 'Username must be at least 3 characters';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: AppTheme.spacingLG),
+
+                // Email Field
+                AppTextField(
+                  controller: _emailController,
+                  label: 'Email Address',
+                  hint: 'Enter your email',
+                  prefixIcon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                  enabled: !authState.isLoading,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Email is required';
+                    }
+                    // Basic email validation
+                    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                    if (!emailRegex.hasMatch(value.trim())) {
+                      return 'Please enter a valid email address';
                     }
                     return null;
                   },
@@ -257,24 +278,67 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Password Field
                 AppPasswordField(
                   controller: _passwordController,
+                  label: 'Password',
+                  hint: 'Create a password',
                   enabled: !authState.isLoading,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
+                      return 'Password is required';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
                     }
                     return null;
                   },
-                  onFieldSubmitted: (_) => _login(),
+                ),
+
+                const SizedBox(height: AppTheme.spacingLG),
+
+                // Confirm Password Field
+                AppPasswordField(
+                  controller: _confirmPasswordController,
+                  label: 'Confirm Password',
+                  hint: 'Re-enter your password',
+                  enabled: !authState.isLoading,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                  onFieldSubmitted: (_) => _register(),
                 ),
 
                 const SizedBox(height: AppTheme.spacingXXL),
 
-                // Login Button
+                // Register Button
                 PrimaryButton(
-                  text: 'Sign In',
-                  onPressed: authState.isLoading ? null : _login,
+                  text: 'Create Account',
+                  onPressed: authState.isLoading ? null : _register,
                   isLoading: authState.isLoading,
-                  backgroundColor: _roleColor,
+                  backgroundColor: AppTheme.secondaryColor,
+                ),
+
+                const SizedBox(height: AppTheme.spacingXL),
+
+                // Already have account
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Already have an account?',
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: authState.isLoading ? null : () => context.pop(),
+                      child: const Text('Sign In'),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: AppTheme.spacingXL),
