@@ -2,8 +2,8 @@ class ApiConfig {
   // Change this to your backend URL
   // For local development: http://localhost:8080 or http://10.0.2.2:8080 (Android emulator)
   // For production: https://your-railway-app.railway.app
-  static const String baseUrl = 'http://localhost:8080';
-  static const String wsUrl = 'ws://localhost:8080/ws';
+  static const String baseUrl = 'https://d97lb9sr-8081.inc1.devtunnels.ms';
+  static const String wsUrl = 'wss://d97lb9sr-8081.inc1.devtunnels.ms/ws';
 
   // Endpoints
   static const String loginEndpoint = '/auth/login';
