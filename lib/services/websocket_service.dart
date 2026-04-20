@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:queueflow_mobileapp/config/api_config.dart';
 import 'package:queueflow_mobileapp/models/ws_message.dart';
 
@@ -42,9 +43,13 @@ class WebSocketService {
     _updateStatus(ConnectionStatus.connecting);
 
     try {
-      // Connect to WebSocket (authentication done via HTTP upgrade)
-      _channel = WebSocketChannel.connect(
-        Uri.parse(ApiConfig.wsUrl),
+      // Connect to WebSocket with authentication header
+      final wsUri = Uri.parse(ApiConfig.wsUrl);
+      _channel = IOWebSocketChannel.connect(
+        wsUri,
+        headers: {
+          'Authorization': 'Bearer $_token',
+        },
       );
 
       // Listen to messages
