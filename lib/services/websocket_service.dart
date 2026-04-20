@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:queueflow_mobileapp/config/api_config.dart';
 import 'package:queueflow_mobileapp/models/ws_message.dart';
+import 'package:queueflow_mobileapp/utils/logger.dart';
 
 enum ConnectionStatus {
   disconnected,
@@ -66,13 +66,9 @@ class WebSocketService {
       // Start ping timer to keep connection alive
       _startPingTimer();
 
-      if (kDebugMode) {
-        print('WebSocket connected');
-      }
+      AppLogger.success('WebSocket connected', 'WebSocket');
     } catch (e) {
-      if (kDebugMode) {
-        print('WebSocket connection error: $e');
-      }
+      AppLogger.error('WebSocket connection error', e, null, 'WebSocket');
       _handleError(e);
     }
   }
@@ -92,20 +88,14 @@ class WebSocketService {
       final wsMessage = WSMessage.fromJson(data);
       _messageController.add(wsMessage);
 
-      if (kDebugMode) {
-        print('WebSocket message received: ${wsMessage.type}');
-      }
+      AppLogger.debug('WebSocket message received: ${wsMessage.type}', 'WebSocket');
     } catch (e) {
-      if (kDebugMode) {
-        print('Error parsing WebSocket message: $e');
-      }
+      AppLogger.error('Error parsing WebSocket message', e, null, 'WebSocket');
     }
   }
 
   void _handleError(dynamic error) {
-    if (kDebugMode) {
-      print('WebSocket error: $error');
-    }
+    AppLogger.error('WebSocket error', error, null, 'WebSocket');
 
     if (!_intentionalDisconnect) {
       _attemptReconnect();
@@ -113,9 +103,7 @@ class WebSocketService {
   }
 
   void _handleClose() {
-    if (kDebugMode) {
-      print('WebSocket closed');
-    }
+    AppLogger.info('WebSocket closed', 'WebSocket');
 
     _pingTimer?.cancel();
     _updateStatus(ConnectionStatus.disconnected);
@@ -128,18 +116,14 @@ class WebSocketService {
   void _attemptReconnect() {
     if (_reconnectAttempts >= ApiConfig.maxReconnectAttempts) {
       _updateStatus(ConnectionStatus.failed);
-      if (kDebugMode) {
-        print('Max reconnect attempts reached');
-      }
+      AppLogger.warning('Max reconnect attempts reached', 'WebSocket');
       return;
     }
 
     _reconnectAttempts++;
     _updateStatus(ConnectionStatus.reconnecting);
 
-    if (kDebugMode) {
-      print('Reconnecting... Attempt $_reconnectAttempts');
-    }
+    AppLogger.info('Reconnecting... Attempt $_reconnectAttempts', 'WebSocket');
 
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(
@@ -152,9 +136,7 @@ class WebSocketService {
     if (_channel != null && _currentStatus == ConnectionStatus.connected) {
       _channel!.sink.add(jsonEncode(message.toJson()));
     } else {
-      if (kDebugMode) {
-        print('Cannot send message: WebSocket not connected');
-      }
+      AppLogger.warning('Cannot send message: WebSocket not connected', 'WebSocket');
     }
   }
 
@@ -165,9 +147,7 @@ class WebSocketService {
     _channel?.sink.close();
     _updateStatus(ConnectionStatus.disconnected);
 
-    if (kDebugMode) {
-      print('WebSocket disconnected intentionally');
-    }
+    AppLogger.info('WebSocket disconnected intentionally', 'WebSocket');
   }
 
   void _updateStatus(ConnectionStatus status) {
