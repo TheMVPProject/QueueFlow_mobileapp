@@ -22,6 +22,21 @@ class NotificationService {
     );
 
     await _notifications.initialize(initSettings);
+
+    // Request notification permissions for Android 13+
+    await _requestPermissions();
+  }
+
+  Future<void> _requestPermissions() async {
+    // For Android 13+ (API 33+), request notification permission
+    final androidPlugin = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidPlugin != null) {
+      await androidPlugin.requestNotificationsPermission();
+    }
+
+    // For iOS, permissions are requested during initialization above
   }
 
   Future<void> showYourTurnNotification() async {
