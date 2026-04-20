@@ -2,11 +2,12 @@ class ApiConfig {
   // Change this to your backend URL
   // For local development: http://localhost:8080 or http://10.0.2.2:8080 (Android emulator)
   // For production: https://your-railway-app.railway.app
-  static const String baseUrl = 'https://d97lb9sr-8081.inc1.devtunnels.ms';
-  static const String wsUrl = 'wss://d97lb9sr-8081.inc1.devtunnels.ms/ws';
+  static const String baseUrl = 'https://queueflowbackend-production.up.railway.app';
+  static const String wsUrl = 'wss://queueflowbackend-production.up.railway.app/ws';
 
   // Endpoints
   static const String loginEndpoint = '/auth/login';
+  static const String registerEndpoint = '/auth/register';
   static const String joinQueueEndpoint = '/queue/join';
   static const String leaveQueueEndpoint = '/queue/leave';
   static const String confirmTurnEndpoint = '/queue/confirm';
