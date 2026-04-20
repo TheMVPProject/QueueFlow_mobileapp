@@ -1,15 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:queueflow_mobileapp/providers/auth_provider.dart';
 import 'package:queueflow_mobileapp/providers/websocket_provider.dart';
 import 'package:queueflow_mobileapp/services/notification_service.dart';
+import 'package:queueflow_mobileapp/services/fcm_service.dart';
 import 'package:queueflow_mobileapp/features/auth/screens/login_screen.dart';
 import 'package:queueflow_mobileapp/features/queue/screens/queue_home_screen.dart';
 import 'package:queueflow_mobileapp/features/admin/screens/admin_dashboard_screen.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Set background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // Initialize services
   await NotificationService().initialize();
+  await FCMService().initialize();
+
   runApp(const ProviderScope(child: MyApp()));
 }
 

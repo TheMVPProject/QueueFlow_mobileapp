@@ -1,4 +1,4 @@
-package com.example.queueflow_mobileapp
+package com.queueflow.app
 
 import io.flutter.embedding.android.FlutterActivity
 

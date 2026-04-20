@@ -24,6 +24,24 @@ class ApiService {
     }
   }
 
+  Future<void> updateFCMToken(String token, String fcmToken) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/auth/fcm-token'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'fcm_token': fcmToken,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to update FCM token');
+    }
+  }
+
   Future<Map<String, dynamic>> joinQueue(String token) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}${ApiConfig.joinQueueEndpoint}'),

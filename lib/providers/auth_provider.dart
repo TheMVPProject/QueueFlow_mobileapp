@@ -3,6 +3,7 @@ import 'package:queueflow_mobileapp/models/user.dart';
 import 'package:queueflow_mobileapp/services/api_service.dart';
 import 'package:queueflow_mobileapp/services/storage_service.dart';
 import 'package:queueflow_mobileapp/services/websocket_service.dart';
+import 'package:queueflow_mobileapp/services/fcm_service.dart';
 import 'package:queueflow_mobileapp/providers/websocket_provider.dart';
 
 final apiServiceProvider = Provider((ref) => ApiService());
@@ -63,6 +64,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       // Connect WebSocket
       _websocketService.connect(user.token);
+
+      // Send FCM token to backend
+      final fcmToken = FCMService().fcmToken;
+      if (fcmToken != null) {
+        try {
+          await _apiService.updateFCMToken(user.token, fcmToken);
+          print('[Auth] FCM token sent to backend');
+        } catch (e) {
+          print('[Auth] Failed to send FCM token: $e');
+        }
+      }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

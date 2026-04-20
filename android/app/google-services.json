@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "165515153570",
+    "project_id": "queueflow-b388b",
+    "storage_bucket": "queueflow-b388b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165515153570:android:935bc278cf734d5ab307fb",
+        "android_client_info": {
+          "package_name": "com.example.queueflow_mobileapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBo5Tp3UFSPrKhceCMUVfDsIVENKqLanfY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165515153570:android:f4786379c6730a60b307fb",
+        "android_client_info": {
+          "package_name": "com.queueflow.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBo5Tp3UFSPrKhceCMUVfDsIVENKqLanfY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
