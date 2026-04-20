@@ -226,12 +226,7 @@ This app prioritizes:
 
 ## 👨‍💻 Author
 
-mohidsk
-
----
-
-## 👨‍💻 Author
-mohidsk
+Shaik Sadiq
 
 ---
 
