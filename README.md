@@ -1,16 +1,87 @@
-# queueflow_mobileapp
+# QueueFlow Mobile App
 
-A new Flutter project.
+Flutter-based mobile application for the QueueFlow virtual queue system.
 
-## Getting Started
+## Quick Start
 
-This project is a starting point for a Flutter application.
+```bash
+# Install dependencies
+flutter pub get
 
-A few resources to get you started if this is your first Flutter project:
+# Run app
+flutter run
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Configuration
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Update API endpoints in `lib/config/api_config.dart`:
+
+```dart
+static const String baseUrl = 'http://localhost:8080';
+static const String wsUrl = 'ws://localhost:8080/ws';
+```
+
+**Note**: For Android emulator, use `http://10.0.2.2:8080` instead of `localhost`.
+
+## Features
+
+### User Features
+- Join virtual queue remotely
+- Real-time position updates
+- Turn notification with countdown timer
+- 3-minute confirmation window
+- App lifecycle management (background/foreground)
+
+### Admin Features
+- Real-time queue dashboard
+- Call next user
+- Remove users from queue
+- Pause/resume queue operations
+
+## Project Structure
+
+```
+queueflow_mobileapp/
+├── lib/
+│   ├── config/              # API configuration
+│   ├── models/              # Data models
+│   ├── services/            # API, WebSocket, storage services
+│   ├── providers/           # Riverpod state management
+│   ├── features/
+│   │   ├── auth/            # Authentication screens
+│   │   ├── queue/           # Queue user screens
+│   │   └── admin/           # Admin dashboard
+│   └── main.dart            # App entry point
+└── pubspec.yaml
+```
+
+## State Management
+
+Uses **Riverpod** for:
+- Authentication state
+- Queue status management
+- Real-time WebSocket updates
+- Admin queue management
+
+## WebSocket Features
+
+- Automatic reconnection with exponential backoff
+- Connection status tracking
+- Message event routing
+- Background/foreground state handling
+
+## Testing
+
+Login with demo accounts:
+- **Admin**: `admin` / `password123`
+- **User**: `user1` / `password123`
+
+## Deployment
+
+For production:
+1. Update `api_config.dart` with production backend URL
+2. Build release:
+   - iOS: `flutter build ios`
+   - Android: `flutter build apk --release`
+
+See main [README.md](../README.md) for comprehensive documentation.
