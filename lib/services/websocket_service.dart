@@ -22,6 +22,7 @@ class WebSocketService {
   String? _token;
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
+  Timer? _pingTimer;
   bool _intentionalDisconnect = false;
 
   Stream<WSMessage> get messages => _messageController.stream;
@@ -62,6 +63,9 @@ class WebSocketService {
       _updateStatus(ConnectionStatus.connected);
       _reconnectAttempts = 0;
 
+      // Start ping timer to keep connection alive
+      _startPingTimer();
+
       if (kDebugMode) {
         print('WebSocket connected');
       }
@@ -71,6 +75,15 @@ class WebSocketService {
       }
       _handleError(e);
     }
+  }
+
+  void _startPingTimer() {
+    _pingTimer?.cancel();
+    _pingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (_currentStatus == ConnectionStatus.connected) {
+        sendMessage(WSMessage(type: 'ping', payload: {}));
+      }
+    });
   }
 
   void _handleMessage(dynamic message) {
@@ -104,6 +117,7 @@ class WebSocketService {
       print('WebSocket closed');
     }
 
+    _pingTimer?.cancel();
     _updateStatus(ConnectionStatus.disconnected);
 
     if (!_intentionalDisconnect) {
@@ -147,6 +161,7 @@ class WebSocketService {
   void disconnect() {
     _intentionalDisconnect = true;
     _reconnectTimer?.cancel();
+    _pingTimer?.cancel();
     _channel?.sink.close();
     _updateStatus(ConnectionStatus.disconnected);
 
@@ -162,6 +177,7 @@ class WebSocketService {
 
   void dispose() {
     _reconnectTimer?.cancel();
+    _pingTimer?.cancel();
     _channel?.sink.close();
     _messageController.close();
     _statusController.close();
