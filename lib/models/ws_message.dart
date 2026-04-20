@@ -92,8 +92,8 @@ class QueueStatePayload {
 
   factory QueueStatePayload.fromJson(Map<String, dynamic> json) {
     return QueueStatePayload(
-      queue: json['queue'] as List<dynamic>,
-      isPaused: json['is_paused'],
+      queue: (json['queue'] as List<dynamic>?) ?? [],
+      isPaused: json['is_paused'] ?? false,
       timestamp: DateTime.parse(json['timestamp']),
     );
   }

@@ -40,6 +40,8 @@ class NotificationService {
   }
 
   Future<void> showYourTurnNotification() async {
+    print('[NotificationService] Attempting to show notification...');
+
     const androidDetails = AndroidNotificationDetails(
       'queue_channel',
       'Queue Notifications',
@@ -49,6 +51,7 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
+      ticker: 'Your turn in queue',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -68,6 +71,8 @@ class NotificationService {
       'Please confirm your presence within 3 minutes',
       notificationDetails,
     );
+
+    print('[NotificationService] Notification triggered');
   }
 
   Future<void> showTimeoutWarning() async {
