@@ -5,6 +5,8 @@ import 'package:queueflow_mobileapp/providers/auth_provider.dart';
 import 'package:queueflow_mobileapp/providers/websocket_provider.dart';
 import 'package:queueflow_mobileapp/services/api_service.dart';
 import 'package:queueflow_mobileapp/services/websocket_service.dart';
+import 'package:queueflow_mobileapp/utils/exceptions.dart';
+import 'package:queueflow_mobileapp/utils/logger.dart';
 
 class AdminState {
   final List<QueueEntry> queue;
@@ -50,15 +52,30 @@ class AdminNotifier extends StateNotifier<AdminState> {
     _websocketService.messages.listen((message) {
       if (message.type == 'admin:queue_state') {
         _handleQueueState(message.payload);
+      } else if (message.type == 'admin:user_joined') {
+        _handleUserJoined(message.payload);
       }
     });
+  }
+
+  void _handleUserJoined(dynamic payload) {
+    try {
+      // Don't show notification when app is open
+      // User can already see the queue update in the UI
+      // Backend will send FCM notification if app is closed
+
+      // Refresh queue to show the new user
+      _refreshQueue();
+    } catch (e) {
+      AppLogger.error('Error handling user joined', e, null, 'AdminProvider');
+    }
   }
 
   void _handleQueueState(dynamic payload) {
     try {
       // Ensure payload is a Map
       if (payload is! Map<String, dynamic>) {
-        print('Invalid payload type: ${payload.runtimeType}');
+        AppLogger.warning('Invalid queue data format received', 'AdminProvider');
         state = state.copyWith(queue: [], error: 'Invalid queue data format');
         return;
       }
@@ -75,10 +92,9 @@ class AdminNotifier extends StateNotifier<AdminState> {
       );
     } catch (e, stackTrace) {
       // Handle null or invalid queue data gracefully
-      print('Error parsing queue data: $e');
-      print('Stack trace: $stackTrace');
-      print('Payload: $payload');
-      state = state.copyWith(queue: [], error: 'Failed to parse queue data: ${e.toString()}');
+      AppLogger.error('Error parsing queue data', e, stackTrace, 'AdminProvider');
+      AppLogger.debug('Payload: $payload', 'AdminProvider');
+      state = state.copyWith(queue: [], error: 'Failed to parse queue data');
     }
   }
 
@@ -88,8 +104,12 @@ class AdminNotifier extends StateNotifier<AdminState> {
     try {
       final queue = await _apiService.getQueueList(_token);
       state = state.copyWith(queue: queue, isLoading: false);
+    } on AppException catch (e) {
+      AppLogger.error('Failed to refresh queue', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: e.userMessage);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      AppLogger.error('Unexpected error refreshing queue', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: 'Failed to load queue');
     }
   }
 
@@ -100,8 +120,12 @@ class AdminNotifier extends StateNotifier<AdminState> {
       await _apiService.callNext(_token);
       await _refreshQueue();
       state = state.copyWith(isLoading: false);
+    } on AppException catch (e) {
+      AppLogger.error('Failed to call next user', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: e.userMessage);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      AppLogger.error('Unexpected error calling next user', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: 'Failed to call next user');
     }
   }
 
@@ -112,8 +136,12 @@ class AdminNotifier extends StateNotifier<AdminState> {
       await _apiService.removeUser(_token, userId);
       await _refreshQueue();
       state = state.copyWith(isLoading: false);
+    } on AppException catch (e) {
+      AppLogger.error('Failed to remove user', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: e.userMessage);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      AppLogger.error('Unexpected error removing user', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: 'Failed to remove user');
     }
   }
 
@@ -123,8 +151,12 @@ class AdminNotifier extends StateNotifier<AdminState> {
     try {
       await _apiService.pauseQueue(_token);
       state = state.copyWith(isPaused: true, isLoading: false);
+    } on AppException catch (e) {
+      AppLogger.error('Failed to pause queue', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: e.userMessage);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      AppLogger.error('Unexpected error pausing queue', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: 'Failed to pause queue');
     }
   }
 
@@ -134,8 +166,12 @@ class AdminNotifier extends StateNotifier<AdminState> {
     try {
       await _apiService.resumeQueue(_token);
       state = state.copyWith(isPaused: false, isLoading: false);
+    } on AppException catch (e) {
+      AppLogger.error('Failed to resume queue', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: e.userMessage);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      AppLogger.error('Unexpected error resuming queue', e, null, 'AdminProvider');
+      state = state.copyWith(isLoading: false, error: 'Failed to resume queue');
     }
   }
 
