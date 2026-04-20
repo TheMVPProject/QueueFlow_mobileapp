@@ -55,14 +55,20 @@ class AdminNotifier extends StateNotifier<AdminState> {
   }
 
   void _handleQueueState(dynamic payload) {
-    final queueState = QueueStatePayload.fromJson(payload);
-    final queue =
-        queueState.queue.map((e) => QueueEntry.fromJson(e)).toList();
+    try {
+      final queueState = QueueStatePayload.fromJson(payload);
+      final queue = (queueState.queue)
+          .map((e) => QueueEntry.fromJson(e as Map<String, dynamic>))
+          .toList();
 
-    state = state.copyWith(
-      queue: queue,
-      isPaused: queueState.isPaused,
-    );
+      state = state.copyWith(
+        queue: queue,
+        isPaused: queueState.isPaused,
+      );
+    } catch (e) {
+      // Handle null or invalid queue data gracefully
+      state = state.copyWith(queue: [], error: 'Failed to parse queue data');
+    }
   }
 
   Future<void> _refreshQueue() async {

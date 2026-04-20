@@ -100,8 +100,16 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      final queue = data['queue'] as List<dynamic>;
-      return queue.map((e) => QueueEntry.fromJson(e)).toList();
+      final queue = data['queue'] as List<dynamic>?;
+
+      // Handle null or empty queue
+      if (queue == null || queue.isEmpty) {
+        return [];
+      }
+
+      return queue
+          .map((e) => QueueEntry.fromJson(e as Map<String, dynamic>))
+          .toList();
     } else {
       throw Exception('Failed to get queue list');
     }
