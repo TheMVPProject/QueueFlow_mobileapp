@@ -4,12 +4,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:queueflow_mobileapp/providers/auth_provider.dart';
 import 'package:queueflow_mobileapp/providers/websocket_provider.dart';
-import 'package:queueflow_mobileapp/services/notification_service.dart';
 import 'package:queueflow_mobileapp/services/fcm_service.dart';
-import 'package:queueflow_mobileapp/features/auth/screens/login_screen.dart';
-import 'package:queueflow_mobileapp/features/queue/screens/queue_home_screen.dart';
-import 'package:queueflow_mobileapp/features/admin/screens/admin_dashboard_screen.dart';
+import 'package:queueflow_mobileapp/services/navigation_service.dart';
+import 'package:queueflow_mobileapp/config/router.dart';
+import 'package:queueflow_mobileapp/theme/app_theme.dart';
 import 'firebase_options.dart';
+
+// Track app start time to allow WebSocket to connect before router redirects
+final appStartTime = DateTime.now();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,9 +24,8 @@ void main() async {
   // Set background message handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // Initialize services
-  await NotificationService().initialize();
-  await FCMService().initialize();
+  // NOTE: NotificationService and FCM will be initialized AFTER login
+  // This prevents requesting notification permission before user is logged in
 
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -41,6 +42,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // 🔄 NEW: Mark router as ready after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NavigationService().markRouterReady();
+    });
   }
 
   @override
@@ -54,19 +60,22 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
 
     final authState = ref.read(authProvider);
+    final authNotifier = ref.read(authProvider.notifier);
     final websocketService = ref.read(websocketServiceProvider);
 
     if (authState.isAuthenticated) {
       switch (state) {
         case AppLifecycleState.resumed:
-          // App came to foreground - reconnect WebSocket
+          // Reconnect WebSocket if disconnected
           if (websocketService.currentStatus != ConnectionStatus.connected) {
             websocketService.connect(authState.user!.token);
           }
+
+          // Refresh FCM token (in case permission was granted or token changed)
+          authNotifier.refreshFCMToken();
           break;
         case AppLifecycleState.paused:
-          // App went to background - keep WebSocket connected
-          // WebSocket will auto-reconnect if connection is lost
+          // Keep WebSocket connected - will auto-reconnect if connection is lost
           break;
         case AppLifecycleState.inactive:
         case AppLifecycleState.detached:
@@ -78,20 +87,13 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+    final router = ref.watch(routerProvider);
 
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'QueueFlow',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: authState.isAuthenticated
-          ? (authState.isAdmin
-              ? const AdminDashboardScreen()
-              : const QueueHomeScreen())
-          : const LoginScreen(),
+      theme: AppTheme.lightTheme,
+      routerConfig: router,
     );
   }
 }
