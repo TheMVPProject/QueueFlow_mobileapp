@@ -38,6 +38,9 @@ dependencies:
   # State management
   flutter_riverpod: ^2.6.1
 
+  # Routing
+  go_router: ^14.6.2
+
   # HTTP and WebSocket
   http: ^1.2.2
   web_socket_channel: ^3.0.1
