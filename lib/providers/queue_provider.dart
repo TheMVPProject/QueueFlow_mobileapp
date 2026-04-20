@@ -5,6 +5,7 @@ import 'package:queueflow_mobileapp/providers/auth_provider.dart';
 import 'package:queueflow_mobileapp/providers/websocket_provider.dart';
 import 'package:queueflow_mobileapp/services/api_service.dart';
 import 'package:queueflow_mobileapp/services/websocket_service.dart';
+import 'package:queueflow_mobileapp/services/notification_service.dart';
 
 class QueueState {
   final QueueStatus? status;
@@ -90,6 +91,9 @@ class QueueNotifier extends StateNotifier<QueueState> {
   void _handleYourTurn(dynamic payload) {
     final yourTurn = YourTurnPayload.fromJson(payload);
     state = state.copyWith(yourTurn: yourTurn, hasTimedOut: false);
+
+    // Show notification
+    NotificationService().showYourTurnNotification();
   }
 
   void _handleTimeout(dynamic payload) {

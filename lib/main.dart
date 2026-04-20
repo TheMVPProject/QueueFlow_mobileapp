@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:queueflow_mobileapp/providers/auth_provider.dart';
 import 'package:queueflow_mobileapp/providers/websocket_provider.dart';
+import 'package:queueflow_mobileapp/services/notification_service.dart';
 import 'package:queueflow_mobileapp/features/auth/screens/login_screen.dart';
 import 'package:queueflow_mobileapp/features/queue/screens/queue_home_screen.dart';
 import 'package:queueflow_mobileapp/features/admin/screens/admin_dashboard_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().initialize();
   runApp(const ProviderScope(child: MyApp()));
 }
 
