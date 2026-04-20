@@ -1,3 +1,8 @@
+// Helper to parse UTC timestamps (null-safe)
+DateTime? _parseUtcTimestamp(dynamic value) {
+  return value != null ? DateTime.parse(value).toUtc() : null;
+}
+
 class QueueEntry {
   final int id;
   final int userId;
@@ -28,15 +33,10 @@ class QueueEntry {
       username: json['username'],
       position: json['position'],
       status: json['status'],
-      joinedAt: DateTime.parse(json['joined_at']),
-      calledAt:
-          json['called_at'] != null ? DateTime.parse(json['called_at']) : null,
-      confirmedAt: json['confirmed_at'] != null
-          ? DateTime.parse(json['confirmed_at'])
-          : null,
-      timeoutAt: json['timeout_at'] != null
-          ? DateTime.parse(json['timeout_at'])
-          : null,
+      joinedAt: DateTime.parse(json['joined_at']).toUtc(),
+      calledAt: _parseUtcTimestamp(json['called_at']),
+      confirmedAt: _parseUtcTimestamp(json['confirmed_at']),
+      timeoutAt: _parseUtcTimestamp(json['timeout_at']),
     );
   }
 }
@@ -61,11 +61,8 @@ class QueueStatus {
       position: json['position'],
       status: json['status'],
       totalInQueue: json['total_in_queue'],
-      calledAt:
-          json['called_at'] != null ? DateTime.parse(json['called_at']) : null,
-      timeoutAt: json['timeout_at'] != null
-          ? DateTime.parse(json['timeout_at'])
-          : null,
+      calledAt: _parseUtcTimestamp(json['called_at']),
+      timeoutAt: _parseUtcTimestamp(json['timeout_at']),
     );
   }
 

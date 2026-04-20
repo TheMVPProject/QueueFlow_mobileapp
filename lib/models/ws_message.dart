@@ -54,27 +54,11 @@ class YourTurnPayload {
   });
 
   factory YourTurnPayload.fromJson(Map<String, dynamic> json) {
+    // Parse the timestamp and ensure it's in UTC
     return YourTurnPayload(
       position: json['position'],
-      timeoutAt: DateTime.parse(json['timeout_at']),
+      timeoutAt: DateTime.parse(json['timeout_at']).toUtc(),
       timeoutInSeconds: json['timeout_in_seconds'],
-    );
-  }
-}
-
-class TimeoutPayload {
-  final String message;
-  final String reason;
-
-  TimeoutPayload({
-    required this.message,
-    required this.reason,
-  });
-
-  factory TimeoutPayload.fromJson(Map<String, dynamic> json) {
-    return TimeoutPayload(
-      message: json['message'],
-      reason: json['reason'],
     );
   }
 }

@@ -1,14 +1,32 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:queueflow_mobileapp/services/notification_service.dart';
+import 'package:queueflow_mobileapp/services/navigation_service.dart';
+import 'package:queueflow_mobileapp/services/api_service.dart';
+import 'package:queueflow_mobileapp/utils/logger.dart';
+import 'dart:io';
 
 // Top-level function to handle background messages
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('[FCM Background] Message received: ${message.messageId}');
+  AppLogger.info('Background message received: ${message.messageId}', 'FCM');
+  AppLogger.info('Data: ${message.data}', 'FCM');
+  AppLogger.info('Has notification: ${message.notification != null}', 'FCM');
 
-  // Show notification when message received in background
-  if (message.notification != null) {
-    await NotificationService().showYourTurnNotification();
+  // FCM automatically shows notification if 'notification' field is present
+  // We only show custom notification if FCM didn't show one
+  // This prevents duplicate notifications!
+  if (message.notification == null) {
+    final type = message.data['type'];
+    if (type == 'your_turn') {
+      AppLogger.info('Showing custom notification: your_turn', 'FCM');
+      await NotificationService().showYourTurnNotification();
+    } else if (type == 'user_joined') {
+      AppLogger.info('Showing custom notification: user_joined', 'FCM');
+      final username = message.data['username'] as String?;
+      await NotificationService().showUserJoinedNotification(username: username);
+    }
+  } else {
+    AppLogger.info('FCM notification already shown, skipping custom notification', 'FCM');
   }
 }
 
@@ -19,11 +37,20 @@ class FCMService {
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   String? _fcmToken;
+  bool _initialized = false;
+  String? _currentAuthToken; // Store auth token for automatic backend updates
 
   String? get fcmToken => _fcmToken;
+  bool get isInitialized => _initialized;
+
+  /// Set auth token for automatic FCM token updates
+  void setAuthToken(String? token) {
+    _currentAuthToken = token;
+  }
 
   Future<void> initialize() async {
-    // Request permission for iOS
+    AppLogger.info('Initializing FCM service...', 'FCM');
+
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
@@ -31,43 +58,115 @@ class FCMService {
       provisional: false,
     );
 
-    print('[FCM] Permission status: ${settings.authorizationStatus}');
+    AppLogger.info('Permission status: ${settings.authorizationStatus}', 'FCM');
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
-      // Get FCM token
-      _fcmToken = await _messaging.getToken();
-      print('[FCM] Token: $_fcmToken');
 
-      // Listen for token refresh
-      _messaging.onTokenRefresh.listen((newToken) {
-        _fcmToken = newToken;
-        print('[FCM] Token refreshed: $newToken');
-        // TODO: Send updated token to backend
-      });
+      try {
+        // iOS simulator fix
+        if (Platform.isIOS) {
+          String? apnsToken = await _messaging.getAPNSToken();
 
-      // Handle foreground messages
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        print('[FCM Foreground] Message received: ${message.messageId}');
-        print('[FCM Foreground] Title: ${message.notification?.title}');
-        print('[FCM Foreground] Body: ${message.notification?.body}');
+          if (apnsToken == null) {
+            AppLogger.info('Simulator detected. Skipping FCM token.', 'FCM');
+            _initialized = true;
+            return;
+          }
+        }
 
-        // Show notification when app is in foreground
-        NotificationService().showYourTurnNotification();
-      });
+        _fcmToken = await _messaging.getToken();
+        AppLogger.success('Token obtained: ${_fcmToken?.substring(0, 20)}...', 'FCM');
 
-      // Handle notification tap when app is in background
-      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        print('[FCM] Notification tapped: ${message.messageId}');
-        // TODO: Navigate to appropriate screen
-      });
+        // Setup message handlers only once
+        if (!_initialized) {
+          _setupMessageHandlers();
+          _initialized = true;
+        }
 
-      // Check if app was opened from terminated state via notification
-      RemoteMessage? initialMessage = await _messaging.getInitialMessage();
-      if (initialMessage != null) {
-        print('[FCM] App opened from terminated state: ${initialMessage.messageId}');
-        // TODO: Navigate to appropriate screen
+        // Listen for token refresh
+        _messaging.onTokenRefresh.listen((newToken) async {
+          AppLogger.info('Token refreshed: ${newToken.substring(0, 20)}...', 'FCM');
+          _fcmToken = newToken;
+
+          // 🔄 NEW: Update backend when token refreshes
+          await _updateTokenInBackend(newToken);
+        });
+
+      } catch (e) {
+        AppLogger.error('Token error', e, null, 'FCM');
+        _initialized = true; // Mark as initialized even on error
       }
+    } else {
+      AppLogger.warning('Notification permission denied', 'FCM');
+      _initialized = true;
+    }
+  }
+
+  /// Force refresh FCM token
+  Future<String?> refreshToken() async {
+    try {
+      _fcmToken = await _messaging.getToken(vapidKey: null);
+      AppLogger.info('Token refreshed: ${_fcmToken?.substring(0, 20)}...', 'FCM');
+      return _fcmToken;
+    } catch (e) {
+      AppLogger.error('Failed to refresh token', e, null, 'FCM');
+      return null;
+    }
+  }
+
+  /// Handle notification tap and navigate to appropriate screen
+  Future<void> _handleNotificationTap(Map<String, dynamic> data) async {
+    AppLogger.info('Handling notification tap navigation', 'FCM');
+    // 🔄 NEW: Use async navigation that waits for router
+    await NavigationService().handleNotificationTap(data);
+  }
+
+  void _setupMessageHandlers() {
+    // Handle foreground messages (app is open)
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      AppLogger.info('Foreground message received: ${message.messageId}', 'FCM');
+      AppLogger.info('Data: ${message.data}', 'FCM');
+      AppLogger.info('Has notification: ${message.notification != null}', 'FCM');
+
+      // When app is in foreground, DON'T show notifications
+      // User can already see the UI updates via WebSocket
+      // Notifications should only appear when app is in background/killed
+      AppLogger.info('App is open, skipping notification (WebSocket will handle UI updates)', 'FCM');
+    });
+
+    // Handle when user taps on notification (app was in background)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+      AppLogger.info('Notification tapped (app in background)', 'FCM');
+      AppLogger.info('Data: ${message.data}', 'FCM');
+      await _handleNotificationTap(message.data);
+    });
+
+    // Check if app was opened from a terminated state by tapping notification
+    _messaging.getInitialMessage().then((RemoteMessage? message) async {
+      if (message != null) {
+        AppLogger.info('App opened from terminated state via notification', 'FCM');
+        AppLogger.info('Data: ${message.data}', 'FCM');
+        // 🔄 NEW: Wait for router to be ready before navigating
+        await NavigationService().waitForRouter();
+        await _handleNotificationTap(message.data);
+      }
+    });
+  }
+
+  /// Update FCM token in backend
+  Future<void> _updateTokenInBackend(String fcmToken) async {
+    if (_currentAuthToken == null || _currentAuthToken!.isEmpty) {
+      AppLogger.warning('No auth token available, skipping backend update', 'FCM');
+      return;
+    }
+
+    try {
+      final apiService = ApiService();
+      await apiService.updateFCMToken(_currentAuthToken!, fcmToken);
+      AppLogger.success('Token updated in backend', 'FCM');
+    } catch (e) {
+      AppLogger.error('Failed to update token in backend', e, null, 'FCM');
     }
   }
 }
