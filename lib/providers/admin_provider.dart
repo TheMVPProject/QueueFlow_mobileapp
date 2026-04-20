@@ -56,6 +56,13 @@ class AdminNotifier extends StateNotifier<AdminState> {
 
   void _handleQueueState(dynamic payload) {
     try {
+      // Ensure payload is a Map
+      if (payload is! Map<String, dynamic>) {
+        print('Invalid payload type: ${payload.runtimeType}');
+        state = state.copyWith(queue: [], error: 'Invalid queue data format');
+        return;
+      }
+
       final queueState = QueueStatePayload.fromJson(payload);
       final queue = (queueState.queue)
           .map((e) => QueueEntry.fromJson(e as Map<String, dynamic>))
@@ -64,10 +71,14 @@ class AdminNotifier extends StateNotifier<AdminState> {
       state = state.copyWith(
         queue: queue,
         isPaused: queueState.isPaused,
+        clearError: true,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       // Handle null or invalid queue data gracefully
-      state = state.copyWith(queue: [], error: 'Failed to parse queue data');
+      print('Error parsing queue data: $e');
+      print('Stack trace: $stackTrace');
+      print('Payload: $payload');
+      state = state.copyWith(queue: [], error: 'Failed to parse queue data: ${e.toString()}');
     }
   }
 
