@@ -42,7 +42,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     FocusScope.of(context).unfocus();
 
-    await ref.read(authProvider.notifier).register(
+    await ref
+        .read(authProvider.notifier)
+        .register(
           _usernameController.text.trim(),
           _emailController.text.trim(),
           _passwordController.text,
@@ -121,10 +123,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           onPressed: authState.isLoading ? null : () => context.pop(),
           tooltip: 'Back',
         ),
-        title: Text(
-          'Create Account',
-          style: AppTheme.headlineMedium,
-        ),
+        title: Text('Create Account', style: AppTheme.headlineMedium),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -265,7 +264,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       return 'Email is required';
                     }
                     // Basic email validation
-                    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                    final emailRegex = RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    );
                     if (!emailRegex.hasMatch(value.trim())) {
                       return 'Please enter a valid email address';
                     }
@@ -335,8 +336,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: authState.isLoading ? null : () => context.pop(),
-                      child: const Text('Sign In'),
+                      onPressed: authState.isLoading
+                          ? null
+                          : () => context.pushReplacement("/login"),
+                      style: ButtonStyle(
+                        padding: WidgetStatePropertyAll(EdgeInsets.zero),
+                      ),
+                      child: const Text(
+                        'Sign In',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ],
                 ),

@@ -164,8 +164,11 @@ class AuthSelectionScreen extends StatelessWidget {
                                 ),
                                 TextButton(
                                   onPressed: () => context.push('/register'),
+                                  style: ButtonStyle(
+                                    padding: WidgetStatePropertyAll(EdgeInsets.zero)
+                                  ),
                                   child: const Text(
-                                    'Create Account',
+                                    ' Create Account',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                     ),
