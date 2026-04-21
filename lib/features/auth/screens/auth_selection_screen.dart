@@ -35,7 +35,8 @@ class AuthSelectionScreen extends StatelessWidget {
                       children: [
                         // App Icon
                         Container(
-                          padding: const EdgeInsets.all(AppTheme.spacingXL),
+                          width: 120,
+                          height: 120,
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
@@ -47,10 +48,13 @@ class AuthSelectionScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.people_alt_rounded,
-                            size: 80,
-                            color: Colors.white,
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/icon/app_icon.png',
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
 

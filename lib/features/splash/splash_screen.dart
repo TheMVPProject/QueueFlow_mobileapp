@@ -25,7 +25,8 @@ class SplashScreen extends StatelessWidget {
             children: [
               // App Icon
               Container(
-                padding: const EdgeInsets.all(AppTheme.spacingXXL),
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
@@ -37,10 +38,13 @@ class SplashScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.people_alt_rounded,
-                  size: 100,
-                  color: Colors.white,
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/icon/app_icon.png',
+                    width: 160,
+                    height: 160,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
 
